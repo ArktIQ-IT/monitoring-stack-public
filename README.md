@@ -169,6 +169,8 @@ lxc.cap.drop:
 
 This requires a restart.
 
+Finally, you should check out your alertmanager settings (configs) and prometheus settings (configs) to set email settings and websites being monitored.
+
 
 Now, just `docker compose up -d` and your monitoring server spins up. Check logs for errors.
 
