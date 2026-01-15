@@ -1,0 +1,58 @@
+global:
+  smtp_smarthost: 'smtp-relay:25'
+  smtp_from: 'test-sender@example.com'
+  smtp_require_tls: false
+
+route:
+  receiver: default-email
+
+  # Group related alerts together
+  group_by: ['alertname', 'instance', 'job']
+
+  # Wait before sending the first alert
+  group_wait: 30s
+
+  # Wait before sending another alert for the same group
+  group_interval: 5m
+
+  # How often to repeat an alert if it's still firing
+  repeat_interval: 4h
+
+  routes:
+    # Silence low-value alerts by default
+    - matchers:
+        - severity="info"
+      receiver: null
+
+receivers:
+  - name: default-email
+    email_configs:
+      - to: test-receiver@example.com
+        send_resolved: true
+        html: |
+          <h2>{{ .GroupLabels.alertname }}</h2>
+          <p><strong>Status:</strong> {{ .Status }}</p>
+          <p><strong>Severity:</strong> {{ .CommonLabels.severity }}</p>
+          {{ if .CommonLabels.instance }}
+          <p><strong>Instance:</strong> {{ .CommonLabels.instance }}</p>
+          {{ end }}
+          {{ if .CommonLabels.node }}
+          <p><strong>Node:</strong> {{ .CommonLabels.node }}</p>
+          {{ end }}
+          <hr>
+          <h3>Alert Details:</h3>
+          {{ range .Alerts }}
+          <p><strong>{{ .Annotations.summary }}</strong></p>
+          <p>{{ .Annotations.description }}</p>
+          <p><strong>Started:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05" }}</p>
+          {{ if .EndsAt }}
+          <p><strong>Resolved:</strong> {{ .EndsAt.Format "2006-01-02 15:04:05" }}</p>
+          {{ end }}
+          {{ end }}
+          <hr>
+          <p>
+            <a href="https://grafana.arktiq.no/alerting/list">View in Grafana Alerts</a> | 
+            <a href="https://grafana.arktiq.no/explore?orgId=1&left=%5B%22now-1h%22,%22now%22,%22Prometheus%22,%7B%22expr%22:%22ALERTS%7Balertname%3D%5C%22{{ .GroupLabels.alertname }}%5C%22%7D%22%7D%5D">View in Grafana Explore</a>
+            <!-- TODO: Update 'grafana.arktiq.no' above with your actual Grafana domain if different -->
+          </p>
+          <p><small>Alertmanager is only accessible internally. Use Grafana links above to view alert details.</small></p>

@@ -1,0 +1,73 @@
+groups:
+
+- name: node-alerts
+  rules:
+  - alert: InstanceDown
+    expr: up == 0
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance down: {{ $labels.instance }}"
+      description: "{{ $labels.job }} on {{ $labels.instance }} (node: {{ $labels.node }}) has been down for more than 2 minutes."
+
+  - alert: DiskUsageHigh
+    expr: |
+      (
+        (node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"} - node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"})
+        /
+        node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"}
+      ) > 0.80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High disk usage on {{ $labels.node }}"
+      description: "Disk usage is above 80% on {{ $labels.mountpoint }} ({{ $labels.device }}) on node {{ $labels.node }}. Currently using {{ $value | humanizePercentage }}."
+
+  - alert: CPUUsageHigh
+    expr: |
+      100 - (avg by (node, instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage on {{ $labels.node }}"
+      description: "CPU usage is above 90% on node {{ $labels.node }} (instance: {{ $labels.instance }}). Currently at {{ $value | humanizePercentage }}."
+
+  - alert: MemoryUsageHigh
+    expr: |
+      (
+        (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
+        /
+        node_memory_MemTotal_bytes
+      ) > 0.90
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage on {{ $labels.node }}"
+      description: "Memory usage is above 90% on node {{ $labels.node }} (instance: {{ $labels.instance }}). Currently using {{ $value | humanizePercentage }}."
+
+  - alert: ContainerNetworkIOHigh
+    expr: |
+      (
+        rate(container_network_receive_bytes_total{name!=""}[5m])
+        +
+        rate(container_network_transmit_bytes_total{name!=""}[5m])
+      ) > (5 * 1024 * 1024)
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High network IO for container on {{ $labels.instance }}"
+      description: "Container {{ $labels.name }} on node {{ $labels.instance }} has network IO above 5 MB/s. Current rate: {{ $value | humanize1024 }}B/s."
+
+  - alert: WebsiteDown
+    expr: probe_success{job="blackbox_http"} == 0
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Website is down: {{ $labels.instance }}"
+      description: "Website {{ $labels.instance }} has been down for more than 2 minutes. HTTP status: {{ $labels.probe_http_status_code }}."

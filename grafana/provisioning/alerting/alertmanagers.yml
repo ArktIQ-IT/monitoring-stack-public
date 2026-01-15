@@ -1,0 +1,12 @@
+apiVersion: 1
+
+alertmanagers:
+  - name: Alertmanager
+    org_id: 1
+    uid: alertmanager
+    type: alertmanager
+    access: proxy
+    url: http://alertmanager:9093
+    basic_auth: false
+    is_default: true
+    editable: false

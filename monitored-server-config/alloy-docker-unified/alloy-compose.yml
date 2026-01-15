@@ -1,0 +1,54 @@
+services:
+  alloy:
+    image: grafana/alloy:v1.12.2
+    container_name: alloy
+    restart: unless-stopped
+
+    ports:
+      - "12346:12345"
+      - "4317:4317"
+      - "4318:4318"
+
+    environment:
+      ALLOY_DEPLOY_MODE: docker
+      INSTANCE: ${HOSTNAME}
+
+    command: >
+      run
+      --server.http.listen-addr=0.0.0.0:12345
+      --storage.path=/var/lib/alloy/data
+      /etc/alloy/config.alloy
+
+    privileged: true
+
+    volumes:
+      - ./alloy-config/config.alloy:/etc/alloy/config.alloy:ro
+
+      # Host metrics
+      - /proc:/rootproc:ro
+      - /:/rootfs:ro
+      - /sys:/sys:ro
+      - /run/udev:/run/udev:ro
+
+      # Docker access (cadvisor needs read access to /var/lib/docker for container metrics)
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+
+      # Journald + logs
+      - /run/log/journal:/run/log/journal:ro
+      - /var/log/journal:/var/log/journal:ro
+      - /var/log:/var/log:ro
+      - /etc/machine-id:/etc/machine-id:ro
+
+      # Alloy data
+      - alloy-data:/var/lib/alloy/data
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    
+    devices:
+      - /dev/kmsg
+
+volumes:
+  alloy-data:
