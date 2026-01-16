@@ -174,6 +174,14 @@ Finally, you should check out your alertmanager settings (configs) and prometheu
 
 Now, just `docker compose up -d` and your monitoring server spins up. Check logs for errors.
 
+If you want to tighten security for your metrics (Prometheus) and log (Loki) ingestion, change their listening ports to the Wireguard interface, like this (example for Prometheus) in `docker-compose.yml`:
+```yaml
+  ports:
+    - "10.100.0.1:9090:9090"
+```
+
+This way, only clients connected with Wireguard are allowed to talk to Prometheus. Do the same for Loki, and you basically have an mTLS-like solution for the communication between the monitoring server and the monitored servers, and you can guarantee that only approved clients can send logs and metrics.
+
 
 ## Setting up monitored servers
 
